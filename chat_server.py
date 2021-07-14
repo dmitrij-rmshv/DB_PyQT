@@ -19,8 +19,38 @@ def log(func):
     return deco
 
 
-class Server:
+class ServerMeta(type):
+    def __init__(self, clsname, bases, clsdict):
+        # pass
+        for key, value in clsdict.items():
+            # Пропустить специальные и частные методы
+            if key.startswith("__"):
+                continue
+
+            # Пропустить любые невызываемые объекты
+            if not hasattr(value, "__call__"):
+                continue
+
+            # Проверить отсутствие вызовов connect для сокетов
+            if getattr(value, "connect"):
+                raise TypeError("class %s must not call connect" % clsname)
+
+            # Проверить использование сокетов для работы по TCP
+            if not getattr(value, "socket"):
+                raise TypeError("class %s must not call listen" % clsname)
+
+            # Проверить отсутствие создания сокетов на уровне классов
+            if getattr(value, "socket"):
+                raise TypeError("class %s must have not a socket" % clsname)
+
+
+class ServerVerifier(metaclass=ServerMeta):
+    pass
+
+
+class Server(ServerVerifier):
     """docstring for Server"""
+
     def __init__(self):
         # self.arg = arg
 
@@ -46,7 +76,8 @@ class Server:
                 self.r = []
                 self.w = []
                 try:
-                    self.r, self.w, e = select.select(self.clients, self.clients, [], wait)
+                    self.r, self.w, e = select.select(
+                        self.clients, self.clients, [], wait)
                 except Exception as e:
                     # Исключение произойдет, если какой-то клиент отключится
                     pass        # Ничего не делать, если какой-то клиент отключился
@@ -55,8 +86,7 @@ class Server:
                 if self.requests:
                     # Выполним отправку ответов клиентам
                     # self.write_responses(self.requests, self.w, self.clients)
-                    self.write_responses() 
-
+                    self.write_responses()
 
     @log
     def new_listen_socket(self):
@@ -66,14 +96,12 @@ class Server:
         sock.settimeout(0.2)
         return sock
 
-
     @log
     def create_parser(self):
         parser = ArgumentParser()
         parser.add_argument('-p', '--port', default=7777)
         parser.add_argument('-a', '--address', default='')
         return parser
-
 
     def read_requests(self):
         """ Чтение запросов из списка клиентов
@@ -89,7 +117,6 @@ class Server:
                 self.clients.remove(sock)
         return self.requests
 
-
     @log
     # def write_responses(self, requests, w_clients, all_clients):
     def write_responses(self):
@@ -102,7 +129,7 @@ class Server:
                     # Подготовить и отправить ответ сервера
                     if self.requests[sock]['action'] == 'presence':
                         self.interlocutors[self.requests[sock]
-                                      ['user']['account_name']] = sock
+                                           ['user']['account_name']] = sock
                         logger.info(
                             f'presence message received from client {sock.getpeername()}')
                         response = {
@@ -141,7 +168,8 @@ class Server:
                         pass
 
             elif self.requests[sock]['action'] == 'quit':
-                print(f'deleting: {self.requests[sock]["action"]}\n{self.requests[sock]}')
+                print(
+                    f'deleting: {self.requests[sock]["action"]}\n{self.requests[sock]}')
                 # del interlocutors[requests[sock]]
 
             elif self.requests[sock]['action'] == 'join':
@@ -157,11 +185,10 @@ class Server:
                 print(f'joining : groups : {self.groups}')
 
 
-
 if __name__ == '__main__':
 
     # interlocutors = {}
     # groups = {}
     # main()
-    
+
     srv = Server()
