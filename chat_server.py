@@ -26,7 +26,7 @@ class Client(Storage):
     __tablename__ = 'clients'
     id = Column(Integer, primary_key=True)
     login = Column(String)
-    info = Column(String, default=login)
+    info = Column(String)
 
     def __init__(self, name):
         self.login = name
@@ -37,21 +37,24 @@ class Client(Storage):
 
 class ClientHistory(Storage):
     __tablename__ = 'clients_history'
-    client_id = Column(Integer, ForeignKey('clients.id'), primary_key=True)
-    entry_time = Column(DateTime, default=datetime.now)
+    id = Column(Integer, primary_key=True)
+    client_id = Column(Integer, ForeignKey('clients.id'))
+    entry_time = Column(DateTime)
     ip_addr = Column(String)
 
     def __init__(self, client, IP) -> None:
         self.client_id = client
         self.ip_addr = IP
+        self.entry_time = datetime.now()
 
     def __repr__(self):
-        return "<Client ('%s') connected at ('%s') from ('%s')>" % self.client_id, self.entry_time, self.ip_addr
+        return "<Client ('%s') connected at ('%s') from ('%s')>" % (self.client_id, self.entry_time, self.ip_addr)
 
 
 class ClientContact(Storage):
     __tablename__ = 'client_contacts'
-    client_id = Column(Integer, ForeignKey('clients.id'), primary_key=True)
+    id = Column(Integer, primary_key=True)
+    client_id = Column(Integer, ForeignKey('clients.id'))
     interlocutor = Column(Integer, ForeignKey('clients.id'))
 
     def __init__(self, client, interlocutor) -> None:
@@ -59,7 +62,7 @@ class ClientContact(Storage):
         self.interlocutor = interlocutor
 
     def __repr__(self):
-        return "<Client ('%s') contact with ('%s')>" % self.client_id, self.interlocutor
+        return "<Client ('%s') contact with ('%s')>" % (self.client_id, self.interlocutor)
 
 
 Storage.metadata.create_all(engine)
@@ -158,6 +161,7 @@ class Server:
                     if self.requests[sock]['action'] == 'presence':
                         self.interlocutors[self.requests[sock]
                                            ['user']['account_name']] = sock
+
                         logger.info(
                             f'presence message received from client {sock.getpeername()}')
                         response = {
@@ -167,7 +171,22 @@ class Server:
                         }
                         sock.send(pickle.dumps(response))
 
-                except:  # Сокет недоступен, клиент отключился
+                        presence_name = self.requests[sock]['user']['account_name']
+                        check_client = session.query(Client.login).filter(
+                            Client.login == presence_name).all()
+                        if not check_client:  # in DB
+                            new_cl = Client(presence_name)
+                            session.add(new_cl)
+                            session.commit()
+                        new_cl_id = session.query(Client.id).filter(
+                            Client.login == presence_name).one()
+                        cl_hist = ClientHistory(
+                            new_cl_id[0], sock.getpeername()[0])
+                        session.add(cl_hist)
+                        session.commit()
+
+                except Exception as e:  # Сокет недоступен, клиент отключился
+                    print(e)
                     print('Клиент {} {} отключился'.format(
                         sock.fileno(), sock.getpeername()))
                     sock.close()
