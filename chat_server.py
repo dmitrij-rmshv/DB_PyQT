@@ -109,6 +109,9 @@ class Server:
                 try:
                     self.r, self.w, e = select.select(
                         self.clients, self.clients, [], wait)
+                except KeyboardInterrupt:
+                    print("-Сервер остановлен")
+                    exit()
                 except Exception as e:
                     # Исключение произойдет, если какой-то клиент отключится
                     pass        # Ничего не делать, если какой-то клиент отключился
@@ -208,15 +211,32 @@ class Server:
                             except Exception as e:
                                 pass
                 else:
+                    # print("self.requests[sock]['from'] = ",
+                    #       self.requests[sock]['from'])
+                    # print("self.requests[sock]['to'] = ",
+                    #       self.requests[sock]['to'])
+
                     try:
                         self.interlocutors[self.requests[sock]['to']].send(
                             pickle.dumps(response))
-                    except Exception as e:
-                        pass
+
+                        id_from = session.query(Client.id).filter(
+                            Client.login == self.requests[sock]['from']).one()[0]
+                        id_to = session.query(Client.id).filter(
+                            Client.login == self.requests[sock]['to']).one()[0]
+                        new_interlocution = ClientContact(id_from, id_to)
+                        session.add(new_interlocution)
+                        session.commit()
+
+                    # except Exception as e:
+                    except KeyError as noname:
+                        print("неудачная отправка сообщения отсутствующему абоненту")
 
             elif self.requests[sock]['action'] == 'quit':
+                # print(
+                #     f'deleting: {self.requests[sock]["action"]}\n{self.requests[sock]}')
                 print(
-                    f'deleting: {self.requests[sock]["action"]}\n{self.requests[sock]}')
+                    f'<{self.requests[sock]["from"]}> покинул беседу с <{self.requests[sock]["to"]}>')
                 # del interlocutors[requests[sock]]
 
             elif self.requests[sock]['action'] == 'join':
@@ -229,7 +249,8 @@ class Server:
                     sock.send(pickle.dumps(response))
                 else:
                     self.groups[self.requests[sock]['room']].append(sock)
-                print(f'joining : groups : {self.groups}')
+                print(
+                    f'joining <{self.requests[sock]["from"]}> to group : {self.requests[sock]["room"]}')
 
 
 if __name__ == '__main__':

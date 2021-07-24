@@ -17,9 +17,7 @@ def log(func):
     return deco
 
 
-
 class Client:
-
 
     def __init__(self):
         try:
@@ -31,26 +29,25 @@ class Client:
 
         self.account_name = input("Введите имя(ник): ") or "guest_user"
 
-
     @log
     def send_msg(self, socket, msg_type):
         socket.send(pickle.dumps(msg_type))
-
 
     @log
     def rcv_msg(self, socket):
         server_data = socket.recv(640)
         return pickle.loads(server_data)
 
-
     def sending_messages(self, s, account_name):
         interlocutor = input('Введите имя собеседника : ')
 
         while True:
-            msg = input('Ваше сообщение (enter "q" to exit) : ')
+            msg = input(f'Ваше сообщение для {interlocutor} ("q" to exit) : ')
             if msg == 'q':
                 message = {
                     "action": "quit",
+                    "to": interlocutor,
+                    "from": account_name
                 }
                 self.send_msg(s, message)
                 break
@@ -63,21 +60,24 @@ class Client:
             }
             self.send_msg(s, message)    # Отправить!
 
-
     def sending_group_messages(self, s, account_name):
         group = input('Введите номер группы (начиная с #) : ')
         join_msg = {
             "action": "join",
             "time": time.time(),
-            "room": group
+            "room": group,
+            "from": account_name
         }
         self.send_msg(s, join_msg)
 
         while True:
-            msg = input('Ваше сообщение (enter "q" to exit) : ')
+            msg = input(
+                f'Ваше сообщение в группу {group} ("q" to exit) : ')
             if msg == 'q':
                 message = {
                     "action": "quit",
+                    "to": group,
+                    "from": account_name
                 }
                 self.send_msg(s, message)
                 break
@@ -90,16 +90,18 @@ class Client:
             }
             self.send_msg(s, message)    # Отправить!
 
-
     def reading_messages(self, s):
         while True:
             data = pickle.loads(s.recv(640))
             # if data['action'] == 'msg':
             if 'action' in data.keys():
-                print(f'\n    {data["from"]}: " {data["message"]} "')
+                if data['to'].startswith('#'):
+                    print(
+                        f'\n    <{data["from"]}> to group <{data["to"]}>: " {data["message"]} "')
+                else:
+                    print(f'\n    <{data["from"]}>: " {data["message"]} "')
             if 'response' in data.keys():
                 print(f'\n    {data["alert"]}')
-
 
     def presence_msg_send(self, s, nik):
         presence = {
@@ -113,7 +115,6 @@ class Client:
         }
         self.send_msg(s, presence)
         return
-
 
     @log
     def communication(self, s, name):
@@ -135,7 +136,7 @@ class Client:
 if __name__ == '__main__':
 
     c = Client()
-    
+
     c.s = socket(AF_INET, SOCK_STREAM)
     c.s.connect((c.addr, c.port))
     c.presence_msg_send(c.s, c.account_name)
