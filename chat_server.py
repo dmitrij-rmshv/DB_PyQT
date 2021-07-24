@@ -188,6 +188,30 @@ class Server:
                         session.add(cl_hist)
                         session.commit()
 
+                    # Выдать список клиентов
+                    elif self.requests[sock]['action'] == 'get_contacts':
+                        login = self.requests[sock]['user_login']
+                        login_id = session.query(Client.id).filter(
+                            Client.login == login).one()[0]
+                        print(f'client_id = {login_id}')
+                        contact_sample = session.query(ClientContact.interlocutor).filter(
+                            ClientContact.client_id == login_id).all()
+                        contact_sample.extend(session.query(ClientContact.client_id).filter(
+                            ClientContact.interlocutor == login_id).all())
+                        contact_ids = set(map(lambda x: x[0], contact_sample))
+                        print(
+                            f'contact_ids = {contact_ids} {type(contact_ids)}')
+                        contact_list = []
+                        for cnt_id in contact_ids:
+                            contact_list.append(session.query(Client.login).filter(
+                                Client.id == cnt_id).first()[0])
+                        print(f'contact_list {contact_list}')
+                        response = {
+                            "response": 202,
+                            "alert": contact_list
+                        }
+                        sock.send(pickle.dumps(response))
+
                 except Exception as e:  # Сокет недоступен, клиент отключился
                     print(e)
                     print('Клиент {} {} отключился'.format(

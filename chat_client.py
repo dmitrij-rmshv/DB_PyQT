@@ -116,6 +116,15 @@ class Client:
         self.send_msg(s, presence)
         return
 
+    def clients_request(self, s):
+        cls_rqst = {
+            "action": "get_contacts",
+            "time": time.time(),
+            "user_login": self.account_name
+        }
+        self.send_msg(s, cls_rqst)
+        return
+
     @log
     def communication(self, s, name):
         while True:
@@ -144,6 +153,10 @@ if __name__ == '__main__':
     if c.server_msg['response']:
         print(f'Добро пожаловать в чат, {c.account_name}')
         logger.info("%(alert)s with code %(response)s", c.server_msg)
+    c.clients_request(c.s)
+    c.chats_list = c.rcv_msg(c.s)
+    if c.chats_list['response']:
+        print(f'Список ваших контактов: {c.chats_list["alert"]}')
 
     t = Thread(target=c.reading_messages, args=(c.s, ))
     t.daemon = True
