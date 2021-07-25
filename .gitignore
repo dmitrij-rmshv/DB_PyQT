@@ -3,3 +3,4 @@ __pycache__/
 client_app.log
 server_app.log*
 server_storage.sqlite
+client_*
