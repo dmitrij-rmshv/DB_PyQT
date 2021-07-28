@@ -1,11 +1,12 @@
 from socket import socket, AF_INET, SOCK_STREAM
 import time
 import pickle
-from sys import argv
+from sys import argv, exit
 from argparse import ArgumentParser
 import logging
 
 from sqlalchemy.sql.functions import now
+from sqlalchemy.sql.schema import ForeignKeyConstraint
 from sqlalchemy.sql.sqltypes import DateTime
 import log.server_log_config
 import select
