@@ -12,6 +12,8 @@ from sqlalchemy.orm import sessionmaker, relationship
 from datetime import datetime
 from sqlalchemy.sql.functions import now
 from sqlalchemy.sql.sqltypes import DateTime
+import chat_client_ui
+from PyQt5 import QtCore, QtWidgets
 
 
 Base = declarative_base()
@@ -201,6 +203,12 @@ class Client:
 
 if __name__ == '__main__':
 
+    app = QtWidgets.QApplication(argv)
+    window = QtWidgets.QMainWindow()
+    ui = chat_client_ui.Ui_MainWindow()
+    ui.setupUi(window)
+    window.show()
+
     c = Client()
 
     c.s = socket(AF_INET, SOCK_STREAM)
@@ -215,6 +223,10 @@ if __name__ == '__main__':
     if c.chats_list['response']:
         print(f'Список ваших контактов: {c.chats_list["alert"]}')
 
+    ui.model_1 = QtCore.QStringListModel()
+    ui.model_1.setStringList(c.chats_list["alert"])
+    ui.listView_chats.setModel(ui.model_1)
+
     engine = create_engine(f'sqlite:///client_{c.account_name}_entries.sqlite')
     Base.metadata.create_all(engine)
     Session = sessionmaker(bind=engine)
@@ -226,3 +238,5 @@ if __name__ == '__main__':
 
     c.communication(c.s, c.account_name)    # основная функция чата
     c.s.close()
+
+    exit(app.exec_())
