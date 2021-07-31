@@ -26,7 +26,7 @@ class Ui_MainWindow(object):
         self.label = QtWidgets.QLabel(self.verticalLayoutWidget)
         self.label.setObjectName("label")
         self.verticalLayout.addWidget(self.label)
-        self.listView_chats = QtWidgets.QListView(self.verticalLayoutWidget)
+        self.listView_chats = QtWidgets.QListWidget(self.verticalLayoutWidget)
         self.listView_chats.setObjectName("listView_chats")
         self.verticalLayout.addWidget(self.listView_chats)
         self.lineEdit = QtWidgets.QLineEdit(self.verticalLayoutWidget)

@@ -3,6 +3,8 @@ import pickle
 import time
 from sys import argv, exit
 import logging
+
+from sqlalchemy.sql.expression import or_
 import log.client_log_config
 from threading import Thread
 from sqlalchemy import create_engine, engine
@@ -200,6 +202,18 @@ class Client:
                 break
         return
 
+    def change_chat(self, item):
+        # print("Вы кликнули: {}".format(item.text()))
+        chat_view = session.query(MsgHistory.time, MsgHistory.origin, MsgHistory.consumer, MsgHistory.message).filter(or_(
+            MsgHistory.origin == item.text(), MsgHistory.consumer == item.text())).all()
+        # print(chat_view)
+        chat_view = [str(repl[0])[5:16] + ':\t' + repl[1] + ' -> ' +
+                     repl[2] + ':\t' + repl[3] for repl in chat_view]
+        # print(chat_view)
+        talk_model = QtCore.QStringListModel()
+        talk_model.setStringList(chat_view)
+        ui.listView_talk.setModel(talk_model)
+
 
 if __name__ == '__main__':
 
@@ -223,9 +237,8 @@ if __name__ == '__main__':
     if c.chats_list['response']:
         print(f'Список ваших контактов: {c.chats_list["alert"]}')
 
-    ui.model_1 = QtCore.QStringListModel()
-    ui.model_1.setStringList(c.chats_list["alert"])
-    ui.listView_chats.setModel(ui.model_1)
+    ui.listView_chats.addItems(c.chats_list["alert"])
+    ui.listView_chats.itemDoubleClicked.connect(c.change_chat)
 
     engine = create_engine(f'sqlite:///client_{c.account_name}_entries.sqlite')
     Base.metadata.create_all(engine)
