@@ -3,6 +3,8 @@ import pickle
 import time
 from sys import argv, exit
 import logging
+
+from sqlalchemy.sql.expression import or_
 import log.client_log_config
 from threading import Thread
 from sqlalchemy import create_engine, engine
@@ -12,6 +14,8 @@ from sqlalchemy.orm import sessionmaker, relationship
 from datetime import datetime
 from sqlalchemy.sql.functions import now
 from sqlalchemy.sql.sqltypes import DateTime
+import chat_client_ui
+from PyQt5 import QtCore, QtWidgets
 
 
 Base = declarative_base()
@@ -71,6 +75,7 @@ class Client:
         self.port = int(argv[2]) if len(argv) > 2 else 7777
 
         self.account_name = input("Введите имя(ник): ") or "guest_user"
+        self.interlocutor = ''
 
     @ log
     def send_msg(self, socket, msg_type):
@@ -198,6 +203,48 @@ class Client:
                 break
         return
 
+    def change_chat(self, item):
+        self.interlocutor = item.text()
+        chat_view = session.query(MsgHistory.time, MsgHistory.origin, MsgHistory.consumer, MsgHistory.message).filter(or_(
+            MsgHistory.origin == self.interlocutor, MsgHistory.consumer == self.interlocutor)).all()
+        chat_view = [str(repl[0])[5:16] + ':\t' + repl[1] + ' -> ' +
+                     repl[2] + ':\t' + repl[3] for repl in chat_view]
+        talk_model = QtCore.QStringListModel()
+        talk_model.setStringList(chat_view)
+        ui.listView_talk.setModel(talk_model)
+
+    def add_contact(self):
+        new_contact = Contact(ui.lineEdit.text())
+        session.add(new_contact)
+        session.commit()
+        new_list = session.query(Contact.companion).all()
+        ui.listView_chats.clear()
+        for contact in new_list:
+            ui.listView_chats.addItem(contact[0])
+
+    def qt_send_msg(self, s):
+
+        msg = ui.textEdit.toPlainText()
+        message = {
+            "action": "msg",
+            "time": time.time(),
+            "to": self.interlocutor,
+            "from": self.account_name,
+            "message": msg
+        }
+        new_msg = MsgHistory(self.account_name, self.interlocutor, msg)
+        session.add(new_msg)
+        session.commit()
+        self.s.send(pickle.dumps(message))
+
+        chat_view = session.query(MsgHistory.time, MsgHistory.origin, MsgHistory.consumer, MsgHistory.message).filter(or_(
+            MsgHistory.origin == self.interlocutor, MsgHistory.consumer == self.interlocutor)).all()
+        chat_view = [str(repl[0])[5:16] + ':\t' + repl[1] + ' -> ' +
+                     repl[2] + ':\t' + repl[3] for repl in chat_view]
+        talk_model = QtCore.QStringListModel()
+        talk_model.setStringList(chat_view)
+        ui.listView_talk.setModel(talk_model)
+
 
 if __name__ == '__main__':
 
@@ -210,10 +257,22 @@ if __name__ == '__main__':
     if c.server_msg['response']:
         print(f'Добро пожаловать в чат, {c.account_name}')
         logger.info("%(alert)s with code %(response)s", c.server_msg)
+
+    app = QtWidgets.QApplication(argv)
+    window = QtWidgets.QMainWindow()
+    ui = chat_client_ui.Ui_MainWindow()
+    ui.setupUi(window, c.account_name)
+    window.show()
+
     c.clients_request(c.s)
     c.chats_list = c.rcv_msg(c.s)
     if c.chats_list['response']:
         print(f'Список ваших контактов: {c.chats_list["alert"]}')
+
+    ui.listView_chats.addItems(c.chats_list["alert"])
+    ui.listView_chats.itemDoubleClicked.connect(c.change_chat)
+    ui.addButton.clicked.connect(c.add_contact)
+    ui.sendButton.clicked.connect(c.qt_send_msg)
 
     engine = create_engine(f'sqlite:///client_{c.account_name}_entries.sqlite')
     Base.metadata.create_all(engine)
@@ -226,3 +285,5 @@ if __name__ == '__main__':
 
     c.communication(c.s, c.account_name)    # основная функция чата
     c.s.close()
+
+    exit(app.exec_())
