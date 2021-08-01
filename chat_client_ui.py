@@ -12,7 +12,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 
 
 class Ui_MainWindow(object):
-    def setupUi(self, MainWindow):
+    def setupUi(self, MainWindow, username):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(800, 552)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
@@ -32,26 +32,27 @@ class Ui_MainWindow(object):
         self.lineEdit = QtWidgets.QLineEdit(self.verticalLayoutWidget)
         self.lineEdit.setObjectName("lineEdit")
         self.verticalLayout.addWidget(self.lineEdit)
-        self.pushButton = QtWidgets.QPushButton(self.verticalLayoutWidget)
-        self.pushButton.setObjectName("pushButton")
-        self.verticalLayout.addWidget(self.pushButton)
+        self.addButton = QtWidgets.QPushButton(self.verticalLayoutWidget)
+        self.addButton.setObjectName("addButton")
+        self.verticalLayout.addWidget(self.addButton)
         self.listView_talk = QtWidgets.QListView(self.centralwidget)
         self.listView_talk.setGeometry(QtCore.QRect(250, 10, 541, 471))
         self.listView_talk.setObjectName("listView_talk")
         self.textEdit = QtWidgets.QTextEdit(self.centralwidget)
         self.textEdit.setGeometry(QtCore.QRect(250, 490, 421, 51))
         self.textEdit.setObjectName("textEdit")
-        self.pushButton_2 = QtWidgets.QPushButton(self.centralwidget)
-        self.pushButton_2.setGeometry(QtCore.QRect(670, 490, 121, 51))
-        self.pushButton_2.setObjectName("pushButton_2")
+        self.sendButton = QtWidgets.QPushButton(self.centralwidget)
+        self.sendButton.setGeometry(QtCore.QRect(670, 490, 121, 51))
+        self.sendButton.setObjectName("sendButton")
         MainWindow.setCentralWidget(self.centralwidget)
 
-        self.retranslateUi(MainWindow)
+        self.retranslateUi(MainWindow, username)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
-    def retranslateUi(self, MainWindow):
+    def retranslateUi(self, MainWindow, username):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "GBchat"))
+        MainWindow.setWindowTitle(_translate(
+            "MainWindow", "GBchat - " + username))
         self.label.setText(_translate("MainWindow", "Список контактов :"))
-        self.pushButton.setText(_translate("MainWindow", "Добавить"))
-        self.pushButton_2.setText(_translate("MainWindow", "Отправить"))
+        self.addButton.setText(_translate("MainWindow", "Добавить"))
+        self.sendButton.setText(_translate("MainWindow", "Отправить"))

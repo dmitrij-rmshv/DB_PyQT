@@ -203,25 +203,27 @@ class Client:
         return
 
     def change_chat(self, item):
-        # print("Вы кликнули: {}".format(item.text()))
         chat_view = session.query(MsgHistory.time, MsgHistory.origin, MsgHistory.consumer, MsgHistory.message).filter(or_(
             MsgHistory.origin == item.text(), MsgHistory.consumer == item.text())).all()
-        # print(chat_view)
         chat_view = [str(repl[0])[5:16] + ':\t' + repl[1] + ' -> ' +
                      repl[2] + ':\t' + repl[3] for repl in chat_view]
-        # print(chat_view)
         talk_model = QtCore.QStringListModel()
         talk_model.setStringList(chat_view)
         ui.listView_talk.setModel(talk_model)
 
+    def add_contact(self):
+        new_contact = ui.lineEdit.text()
+        print(new_contact)
+        new_contact = Contact(new_contact)
+        session.add(new_contact)
+        session.commit()
+        new_list = session.query(Contact.companion).all()
+        ui.listView_chats.clear()
+        for contact in new_list:
+            ui.listView_chats.addItem(contact[0])
+
 
 if __name__ == '__main__':
-
-    app = QtWidgets.QApplication(argv)
-    window = QtWidgets.QMainWindow()
-    ui = chat_client_ui.Ui_MainWindow()
-    ui.setupUi(window)
-    window.show()
 
     c = Client()
 
@@ -232,6 +234,13 @@ if __name__ == '__main__':
     if c.server_msg['response']:
         print(f'Добро пожаловать в чат, {c.account_name}')
         logger.info("%(alert)s with code %(response)s", c.server_msg)
+
+    app = QtWidgets.QApplication(argv)
+    window = QtWidgets.QMainWindow()
+    ui = chat_client_ui.Ui_MainWindow()
+    ui.setupUi(window, c.account_name)
+    window.show()
+
     c.clients_request(c.s)
     c.chats_list = c.rcv_msg(c.s)
     if c.chats_list['response']:
@@ -239,6 +248,7 @@ if __name__ == '__main__':
 
     ui.listView_chats.addItems(c.chats_list["alert"])
     ui.listView_chats.itemDoubleClicked.connect(c.change_chat)
+    ui.addButton.clicked.connect(c.add_contact)
 
     engine = create_engine(f'sqlite:///client_{c.account_name}_entries.sqlite')
     Base.metadata.create_all(engine)
