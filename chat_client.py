@@ -75,6 +75,7 @@ class Client:
         self.port = int(argv[2]) if len(argv) > 2 else 7777
 
         self.account_name = input("Введите имя(ник): ") or "guest_user"
+        self.interlocutor = ''
 
     @ log
     def send_msg(self, socket, msg_type):
@@ -203,8 +204,9 @@ class Client:
         return
 
     def change_chat(self, item):
+        self.interlocutor = item.text()
         chat_view = session.query(MsgHistory.time, MsgHistory.origin, MsgHistory.consumer, MsgHistory.message).filter(or_(
-            MsgHistory.origin == item.text(), MsgHistory.consumer == item.text())).all()
+            MsgHistory.origin == self.interlocutor, MsgHistory.consumer == self.interlocutor)).all()
         chat_view = [str(repl[0])[5:16] + ':\t' + repl[1] + ' -> ' +
                      repl[2] + ':\t' + repl[3] for repl in chat_view]
         talk_model = QtCore.QStringListModel()
@@ -212,15 +214,36 @@ class Client:
         ui.listView_talk.setModel(talk_model)
 
     def add_contact(self):
-        new_contact = ui.lineEdit.text()
-        print(new_contact)
-        new_contact = Contact(new_contact)
+        new_contact = Contact(ui.lineEdit.text())
         session.add(new_contact)
         session.commit()
         new_list = session.query(Contact.companion).all()
         ui.listView_chats.clear()
         for contact in new_list:
             ui.listView_chats.addItem(contact[0])
+
+    def qt_send_msg(self, s):
+
+        msg = ui.textEdit.toPlainText()
+        message = {
+            "action": "msg",
+            "time": time.time(),
+            "to": self.interlocutor,
+            "from": self.account_name,
+            "message": msg
+        }
+        new_msg = MsgHistory(self.account_name, self.interlocutor, msg)
+        session.add(new_msg)
+        session.commit()
+        self.s.send(pickle.dumps(message))
+
+        chat_view = session.query(MsgHistory.time, MsgHistory.origin, MsgHistory.consumer, MsgHistory.message).filter(or_(
+            MsgHistory.origin == self.interlocutor, MsgHistory.consumer == self.interlocutor)).all()
+        chat_view = [str(repl[0])[5:16] + ':\t' + repl[1] + ' -> ' +
+                     repl[2] + ':\t' + repl[3] for repl in chat_view]
+        talk_model = QtCore.QStringListModel()
+        talk_model.setStringList(chat_view)
+        ui.listView_talk.setModel(talk_model)
 
 
 if __name__ == '__main__':
@@ -249,6 +272,7 @@ if __name__ == '__main__':
     ui.listView_chats.addItems(c.chats_list["alert"])
     ui.listView_chats.itemDoubleClicked.connect(c.change_chat)
     ui.addButton.clicked.connect(c.add_contact)
+    ui.sendButton.clicked.connect(c.qt_send_msg)
 
     engine = create_engine(f'sqlite:///client_{c.account_name}_entries.sqlite')
     Base.metadata.create_all(engine)
