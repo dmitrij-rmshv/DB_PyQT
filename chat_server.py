@@ -16,8 +16,32 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 from datetime import datetime
 
+import hmac
+import os
+
 engine = create_engine('sqlite:///server_storage.sqlite')
 Session = sessionmaker(bind=engine)
+
+
+def server_authenticate(connection, secret_key):
+    ''' Запрос аутентификаии клиента.
+        сonnection - сетевое соединение (сокет);
+        secret_key - ключ шифрования, известный клиенту и серверу
+    '''
+    # 1. Создаётся случайное послание и отсылается клиенту
+    message = os.urandom(32)
+    connection.send(message)
+
+    # 2. Вычисляется HMAC-функция от послания с использованием секретного ключа
+    hash = hmac.new(secret_key, message, 'sha1')
+    digest = hash.digest()
+
+    # 3. Пришедший ответ от клиента сравнивается с локальным результатом HMAC
+    response = connection.recv(len(digest))
+    return hmac.compare_digest(digest, response)
+
+
+secret_key = b'our_secret_key'
 
 
 Storage = declarative_base()
@@ -97,6 +121,8 @@ class Server:
         while True:
             try:
                 conn, addr = self.s.accept()  # Проверка подключений
+                if not server_authenticate(conn, secret_key):
+                    conn.close()
             except OSError as e:
                 pass                        # timeout вышел
             else:

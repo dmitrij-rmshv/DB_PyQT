@@ -17,6 +17,23 @@ from sqlalchemy.sql.sqltypes import DateTime
 import chat_client_ui
 from PyQt5 import QtCore, QtWidgets
 
+import hmac
+import os
+
+
+def client_authenticate(connection, secret_key):
+    ''' Аутентификация клиента на удаленном сервисе.
+        Параметр connection - сетевое соединение (сокет);
+        secret_key - ключ шифрования, известный клиенту и серверу
+    '''
+    message = connection.recv(32)
+    hash = hmac.new(secret_key, message, 'sha1')
+    digest = hash.digest()
+    connection.send(digest)
+
+
+secret_key = b'our_secret_key'
+
 
 Base = declarative_base()
 
@@ -252,6 +269,10 @@ if __name__ == '__main__':
 
     c.s = socket(AF_INET, SOCK_STREAM)
     c.s.connect((c.addr, c.port))
+
+    client_authenticate(c.s, secret_key)
+    # print('authenticated')
+
     c.presence_msg_send(c.s, c.account_name)
     c.server_msg = c.rcv_msg(c.s)
     if c.server_msg['response']:
