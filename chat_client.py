@@ -16,6 +16,8 @@ from sqlalchemy.sql.functions import now
 from sqlalchemy.sql.sqltypes import DateTime
 import chat_client_ui
 from PyQt5 import QtCore, QtWidgets
+# from queue import Queue
+import functools
 
 import hmac
 import os
@@ -79,6 +81,21 @@ def log(func):
         logger.info(f'{func.__name__} running')
         return r
     return deco
+
+
+def login_required(func):
+    @functools.wraps(func)
+    def wrap(*args, **kwargs):
+        if c.account_name == "guest_user":
+            raise Exception("требуется авторизация")
+        else:
+            return func(*args, **kwargs)
+    return wrap
+
+
+@login_required
+def some_function():
+    print("somedata")
 
 
 class Client:
@@ -164,6 +181,7 @@ class Client:
             self.send_msg(s, message)    # Отправить!
 
     def reading_messages(self, s):
+        r_session = Session()
         while True:
             data = pickle.loads(s.recv(640))
             # if data['action'] == 'msg':
@@ -173,11 +191,12 @@ class Client:
                         f'\n    <{data["from"]}> to group <{data["to"]}>: " {data["message"]} "')
                 else:
                     print(f'\n    <{data["from"]}>: " {data["message"]} "')
+                    # reading_q.put(data)
 
                     new_msg = MsgHistory(
                         data['from'], data['to'], data['message'])
-                    session.add(new_msg)
-                    session.commit()
+                    r_session.add(new_msg)
+                    r_session.commit()
 
             if 'response' in data.keys():
                 print(f'\n    {data["alert"]}')
@@ -218,6 +237,13 @@ class Client:
                 self.sending_group_messages(s, name)
             if action_choice == 'q':
                 break
+            # time.sleep(1)
+            # in_msg = reading_q.get()
+
+            # new_msg = MsgHistory(
+            #     in_msg['from'], in_msg['to'], in_msg['message'])
+            # session.add(new_msg)
+            # session.commit()
         return
 
     def change_chat(self, item):
@@ -230,6 +256,7 @@ class Client:
         talk_model.setStringList(chat_view)
         ui.listView_talk.setModel(talk_model)
 
+    # @login_required
     def add_contact(self):
         new_contact = Contact(ui.lineEdit.text())
         session.add(new_contact)
@@ -238,6 +265,7 @@ class Client:
         ui.listView_chats.clear()
         for contact in new_list:
             ui.listView_chats.addItem(contact[0])
+        ui.lineEdit.clear()
 
     def qt_send_msg(self, s):
 
@@ -261,6 +289,7 @@ class Client:
         talk_model = QtCore.QStringListModel()
         talk_model.setStringList(chat_view)
         ui.listView_talk.setModel(talk_model)
+        ui.textEdit.clear()
 
 
 if __name__ == '__main__':
@@ -299,6 +328,8 @@ if __name__ == '__main__':
     Base.metadata.create_all(engine)
     Session = sessionmaker(bind=engine)
     session = Session()
+
+    # reading_q = Queue(9)
 
     t = Thread(target=c.reading_messages, args=(c.s, ))
     t.daemon = True
