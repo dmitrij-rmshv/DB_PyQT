@@ -147,6 +147,7 @@ class Client:
             self.send_msg(s, message)    # Отправить!
 
     def reading_messages(self, s):
+        r_session = Session()
         while True:
             data = pickle.loads(s.recv(640))
             # if data['action'] == 'msg':
@@ -159,8 +160,8 @@ class Client:
 
                     new_msg = MsgHistory(
                         data['from'], data['to'], data['message'])
-                    session.add(new_msg)
-                    session.commit()
+                    r_session.add(new_msg)
+                    r_session.commit()
 
             if 'response' in data.keys():
                 print(f'\n    {data["alert"]}')
@@ -221,6 +222,7 @@ class Client:
         ui.listView_chats.clear()
         for contact in new_list:
             ui.listView_chats.addItem(contact[0])
+        ui.lineEdit.clear()
 
     def qt_send_msg(self, s):
 
@@ -244,6 +246,7 @@ class Client:
         talk_model = QtCore.QStringListModel()
         talk_model.setStringList(chat_view)
         ui.listView_talk.setModel(talk_model)
+        ui.textEdit.clear()
 
 
 if __name__ == '__main__':
