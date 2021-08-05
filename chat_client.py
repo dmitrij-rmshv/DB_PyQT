@@ -109,6 +109,10 @@ class Client:
         self.port = int(argv[2]) if len(argv) > 2 else 7777
 
         self.account_name = input("Введите имя(ник): ") or "guest_user"
+        if self.account_name != "guest_user":
+            self.passwd = input("Введите пароль: ")
+        else:
+            self.passwd = ''
         self.interlocutor = ''
 
     @ log
@@ -201,14 +205,15 @@ class Client:
             if 'response' in data.keys():
                 print(f'\n    {data["alert"]}')
 
-    def presence_msg_send(self, s, nik):
+    def presence_msg_send(self, s):
         presence = {
             "action": "presence",
             "time": time.time(),
             "type": "status",
             "user": {
-                "account_name": nik,
-                "status": "Yep, I am here!"
+                "account_name": self.account_name,
+                "status": "Yep, I am here!",
+                "password": self.passwd
             }
         }
         self.send_msg(s, presence)
@@ -302,11 +307,15 @@ if __name__ == '__main__':
     client_authenticate(c.s, secret_key)
     # print('authenticated')
 
-    c.presence_msg_send(c.s, c.account_name)
+    c.presence_msg_send(c.s)
     c.server_msg = c.rcv_msg(c.s)
-    if c.server_msg['response']:
+    if c.server_msg['response'] == 202:
         print(f'Добро пожаловать в чат, {c.account_name}')
         logger.info("%(alert)s with code %(response)s", c.server_msg)
+    elif c.server_msg['response'] == 402:
+        print(f'{c.account_name}, ваш пароль или логин неверен')
+        logger.info("%(alert)s with code %(response)s", c.server_msg)
+        exit()
 
     app = QtWidgets.QApplication(argv)
     window = QtWidgets.QMainWindow()

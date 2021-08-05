@@ -18,6 +18,7 @@ from datetime import datetime
 
 import hmac
 import os
+from hashlib import pbkdf2_hmac
 
 engine = create_engine('sqlite:///server_storage.sqlite')
 Session = sessionmaker(bind=engine)
@@ -47,14 +48,21 @@ secret_key = b'our_secret_key'
 Storage = declarative_base()
 
 
+def hsh(password):
+    return pbkdf2_hmac('sha256', password.encode(
+        'utf-8'), b'saltsaltsaltsalt', 100000)
+
+
 class Client(Storage):
     __tablename__ = 'clients'
     id = Column(Integer, primary_key=True)
     login = Column(String)
+    password = Column(String)
     info = Column(String)
 
-    def __init__(self, name):
+    def __init__(self, name, passwd):
         self.login = name
+        self.password = hsh(passwd)
 
     def __repr__(self):
         return "<Client ('%s')>" % self.login
@@ -194,20 +202,34 @@ class Server:
 
                         logger.info(
                             f'presence message received from client {sock.getpeername()}')
-                        response = {
-                            "response": 202,
-                            "time": time.time(),
-                            "alert": "chat-server confirm connection"
-                        }
-                        sock.send(pickle.dumps(response))
 
                         presence_name = self.requests[sock]['user']['account_name']
+                        presence_pass = self.requests[sock]['user']['password']
+
                         check_client = session.query(Client.login).filter(
                             Client.login == presence_name).all()
-                        if not check_client:  # in DB
-                            new_cl = Client(presence_name)
+                        if not check_client:  # новый клиент - добавить в базу
+                            new_cl = Client(
+                                presence_name, presence_pass)
                             session.add(new_cl)
                             session.commit()
+                        else:  # клиент в базе - сверить пароль!
+                            bd_pass = session.query(Client.password).filter(
+                                Client.login == presence_name).all()[0][0]
+                            if bd_pass != hsh(presence_pass):
+                                response = {
+                                    "response": 402,
+                                    "time": time.time(),
+                                    "alert": "wrong login / password!"
+                                }
+                            else:
+                                response = {
+                                    "response": 202,
+                                    "time": time.time(),
+                                    "alert": "chat-server rejected the connection"
+                                }
+                            sock.send(pickle.dumps(response))
+
                         new_cl_id = session.query(Client.id).filter(
                             Client.login == presence_name).one()
                         cl_hist = ClientHistory(
