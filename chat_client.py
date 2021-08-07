@@ -1,41 +1,36 @@
-from socket import socket, AF_INET, SOCK_STREAM
+import functools
+import hmac
+import logging
 import pickle
 import time
-from sys import argv, exit
-import logging
-
-from sqlalchemy.sql.expression import or_
-import log.client_log_config
-from threading import Thread
-from sqlalchemy import create_engine, engine
-from sqlalchemy import Table, Column, Integer, Numeric, String, MetaData, ForeignKey
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, relationship
 from datetime import datetime
-from sqlalchemy.sql.functions import now
-from sqlalchemy.sql.sqltypes import DateTime
-import chat_client_ui
-from PyQt5 import QtCore, QtWidgets
-# from queue import Queue
-import functools
+from socket import socket, AF_INET, SOCK_STREAM
+from sys import argv, exit
+from threading import Thread
 
-import hmac
-import os
+from PyQt5 import QtCore, QtWidgets
+from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy import create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.sql.expression import or_
+from sqlalchemy.sql.sqltypes import DateTime
+
+import chat_client_ui
 
 
 def client_authenticate(connection, secret_key):
-    ''' Аутентификация клиента на удаленном сервисе.
-        Параметр connection - сетевое соединение (сокет);
-        secret_key - ключ шифрования, известный клиенту и серверу
-    '''
+    """ Аутентификация клиента на удаленном сервисе.
+    Параметр connection - сетевое соединение (сокет);
+    secret_key - ключ шифрования, известный клиенту и серверу
+    """
     message = connection.recv(32)
-    hash = hmac.new(secret_key, message, 'sha1')
-    digest = hash.digest()
+    hash_ = hmac.new(secret_key, message, 'sha1')
+    digest = hash_.digest()
     connection.send(digest)
 
 
 secret_key = b'our_secret_key'
-
 
 Base = declarative_base()
 
@@ -58,8 +53,6 @@ class MsgHistory(Base):
     time = Column(DateTime)
     origin = Column(String, ForeignKey('contacts.companion'))
     consumer = Column(String, ForeignKey('contacts.companion'))
-    # origin = Column(String)
-    # consumer = Column(String)
     message = Column(String)
 
     def __init__(self, from_, to, msg):
@@ -80,6 +73,7 @@ def log(func):
         r = func(*args, **kwargs)
         logger.info(f'{func.__name__} running')
         return r
+
     return deco
 
 
@@ -90,6 +84,7 @@ def login_required(func):
             raise Exception("требуется авторизация")
         else:
             return func(*args, **kwargs)
+
     return wrap
 
 
@@ -115,18 +110,18 @@ class Client:
             self.passwd = ''
         self.interlocutor = ''
 
-    @ log
+    @log
     def send_msg(self, socket, msg_type):
         socket.send(pickle.dumps(msg_type))
 
-    @ log
+    @log
     def rcv_msg(self, socket):
         server_data = socket.recv(640)
         return pickle.loads(server_data)
 
     def sending_messages(self, s, account_name):
+        """Режим личных сообщений. Задействуется только в консольном режиме"""
         interlocutor = input('Введите имя собеседника : ')
-
         new_contact = Contact(interlocutor)
         session.add(new_contact)
         session.commit()
@@ -148,13 +143,14 @@ class Client:
                 "from": account_name,
                 "message": msg
             }
-            self.send_msg(s, message)    # Отправить!
+            self.send_msg(s, message)
 
             new_msg = MsgHistory(self.account_name, interlocutor, msg)
             session.add(new_msg)
             session.commit()
 
     def sending_group_messages(self, s, account_name):
+        """Режим групповых сообщений. Задействуется только в консольном режиме"""
         group = input('Введите номер группы (начиная с #) : ')
         join_msg = {
             "action": "join",
@@ -182,9 +178,10 @@ class Client:
                 "from": account_name,
                 "message": msg
             }
-            self.send_msg(s, message)    # Отправить!
+            self.send_msg(s, message)
 
     def reading_messages(self, s):
+        """Приём сообщений. Запускается в отдельном потоке"""
         r_session = Session()
         while True:
             data = pickle.loads(s.recv(640))
@@ -195,7 +192,6 @@ class Client:
                         f'\n    <{data["from"]}> to group <{data["to"]}>: " {data["message"]} "')
                 else:
                     print(f'\n    <{data["from"]}>: " {data["message"]} "')
-                    # reading_q.put(data)
 
                     new_msg = MsgHistory(
                         data['from'], data['to'], data['message'])
@@ -206,6 +202,7 @@ class Client:
                 print(f'\n    {data["alert"]}')
 
     def presence_msg_send(self, s):
+        """Отправить серверу п"""
         presence = {
             "action": "presence",
             "time": time.time(),
@@ -220,21 +217,23 @@ class Client:
         return
 
     def clients_request(self, s):
-        cls_rqst = {
+        cls_request = {
             "action": "get_contacts",
             "time": time.time(),
             "user_login": self.account_name
         }
-        self.send_msg(s, cls_rqst)
+        self.send_msg(s, cls_request)
         return
 
     @log
     def communication(self, s, name):
+        """Организовать поочерёдный запуск бесед по запросу пользователя. Только в консольном режиме"""
         while True:
             action_choice = ''
             while action_choice != 's' and action_choice != 'g' and action_choice != 'q':
                 action_choice = input(
-                    '\u2193\u2193\u2193 Введите желаемое действие \u2193\u2193\u2193\n сообщение пользователю (s), \n сообщение группе     (g), \n покинуть программу    (q)? : ')
+                    '\u2193\u2193\u2193 Введите желаемое действие \u2193\u2193\u2193\n сообщение пользователю (s), '
+                    '\n сообщение группе     (g), \n покинуть программу    (q)? : ')
 
             if action_choice == 's':
                 self.sending_messages(s, name)
@@ -242,19 +241,14 @@ class Client:
                 self.sending_group_messages(s, name)
             if action_choice == 'q':
                 break
-            # time.sleep(1)
-            # in_msg = reading_q.get()
-
-            # new_msg = MsgHistory(
-            #     in_msg['from'], in_msg['to'], in_msg['message'])
-            # session.add(new_msg)
-            # session.commit()
         return
 
     def change_chat(self, item):
+        """Сменить беседу по запросу пользователя. Только в графическом режиме"""
         self.interlocutor = item.text()
-        chat_view = session.query(MsgHistory.time, MsgHistory.origin, MsgHistory.consumer, MsgHistory.message).filter(or_(
-            MsgHistory.origin == self.interlocutor, MsgHistory.consumer == self.interlocutor)).all()
+        chat_view = session.query(MsgHistory.time, MsgHistory.origin, MsgHistory.consumer, MsgHistory.message).filter(
+            or_(
+                MsgHistory.origin == self.interlocutor, MsgHistory.consumer == self.interlocutor)).all()
         chat_view = [str(repl[0])[5:16] + ':\t' + repl[1] + ' -> ' +
                      repl[2] + ':\t' + repl[3] for repl in chat_view]
         talk_model = QtCore.QStringListModel()
@@ -263,6 +257,7 @@ class Client:
 
     # @login_required
     def add_contact(self):
+        """Добавить собеседника по запросу пользователя. Только в графическом режиме"""
         new_contact = Contact(ui.lineEdit.text())
         session.add(new_contact)
         session.commit()
@@ -273,7 +268,7 @@ class Client:
         ui.lineEdit.clear()
 
     def qt_send_msg(self, s):
-
+        """Организовать отправку сообщения в графическом режиме"""
         msg = ui.textEdit.toPlainText()
         message = {
             "action": "msg",
@@ -287,8 +282,9 @@ class Client:
         session.commit()
         self.s.send(pickle.dumps(message))
 
-        chat_view = session.query(MsgHistory.time, MsgHistory.origin, MsgHistory.consumer, MsgHistory.message).filter(or_(
-            MsgHistory.origin == self.interlocutor, MsgHistory.consumer == self.interlocutor)).all()
+        chat_view = session.query(MsgHistory.time, MsgHistory.origin, MsgHistory.consumer, MsgHistory.message).filter(
+            or_(
+                MsgHistory.origin == self.interlocutor, MsgHistory.consumer == self.interlocutor)).all()
         chat_view = [str(repl[0])[5:16] + ':\t' + repl[1] + ' -> ' +
                      repl[2] + ':\t' + repl[3] for repl in chat_view]
         talk_model = QtCore.QStringListModel()
@@ -305,8 +301,6 @@ if __name__ == '__main__':
     c.s.connect((c.addr, c.port))
 
     client_authenticate(c.s, secret_key)
-    # print('authenticated')
-
     c.presence_msg_send(c.s)
     c.server_msg = c.rcv_msg(c.s)
     if c.server_msg['response'] == 202:
@@ -338,13 +332,11 @@ if __name__ == '__main__':
     Session = sessionmaker(bind=engine)
     session = Session()
 
-    # reading_q = Queue(9)
-
-    t = Thread(target=c.reading_messages, args=(c.s, ))
+    t = Thread(target=c.reading_messages, args=(c.s,))
     t.daemon = True
     t.start()
 
-    c.communication(c.s, c.account_name)    # основная функция чата
+    c.communication(c.s, c.account_name)  # основная функция чата
     c.s.close()
 
     exit(app.exec_())

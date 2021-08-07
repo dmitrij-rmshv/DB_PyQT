@@ -1,34 +1,30 @@
-from socket import socket, AF_INET, SOCK_STREAM
-import time
-import pickle
-from sys import argv, exit
-from argparse import ArgumentParser
-import logging
-
-from sqlalchemy.sql.functions import now
-from sqlalchemy.sql.schema import ForeignKeyConstraint
-from sqlalchemy.sql.sqltypes import DateTime
-import log.server_log_config
-import select
-from sqlalchemy import create_engine, engine
-from sqlalchemy import Table, Column, Integer, Numeric, String, MetaData, ForeignKey
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, relationship
-from datetime import datetime
-
 import hmac
+import logging
 import os
+import pickle
+import select
+import time
+from argparse import ArgumentParser
+from datetime import datetime
 from hashlib import pbkdf2_hmac
+from socket import socket, AF_INET, SOCK_STREAM
+from sys import argv, exit
+
+from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy import create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.sql.sqltypes import DateTime
 
 engine = create_engine('sqlite:///server_storage.sqlite')
 Session = sessionmaker(bind=engine)
 
 
 def server_authenticate(connection, secret_key):
-    ''' Запрос аутентификаии клиента.
-        сonnection - сетевое соединение (сокет);
-        secret_key - ключ шифрования, известный клиенту и серверу
-    '''
+    """ Запрос аутентификаии клиента.
+    connection - сетевое соединение (сокет);
+    secret_key - ключ шифрования, известный клиенту и серверу
+    """
     # 1. Создаётся случайное послание и отсылается клиенту
     message = os.urandom(32)
     connection.send(message)
@@ -44,11 +40,11 @@ def server_authenticate(connection, secret_key):
 
 secret_key = b'our_secret_key'
 
-
 Storage = declarative_base()
 
 
 def hsh(password):
+    """Вычислить хэш пароля пользователя"""
     return pbkdf2_hmac('sha256', password.encode(
         'utf-8'), b'saltsaltsaltsalt', 100000)
 
@@ -100,7 +96,6 @@ class ClientContact(Storage):
 
 Storage.metadata.create_all(engine)
 
-
 logger = logging.getLogger('server_app')
 
 
@@ -109,20 +104,19 @@ def log(func):
         logger.info(f'function "{func.__name__}"" running')
         r = func(*args, **kwargs)
         return r
+
     return deco
 
 
 class Server:
-    """docstring for Server"""
+    """Здесь весь сервер"""
 
     def __init__(self):
-        # self.arg = arg
 
         self.interlocutors = {}
         self.groups = {}
 
         self.arg = self.create_parser().parse_args(argv[1:])
-        # self.s = self.new_listen_socket(self.arg)
         self.s = self.new_listen_socket()
         self.clients = []
 
@@ -132,7 +126,7 @@ class Server:
                 if not server_authenticate(conn, secret_key):
                     conn.close()
             except OSError as e:
-                pass                        # timeout вышел
+                pass  # timeout вышел
             else:
                 print(f'Получен запрос на соединение с {str(addr)}')
                 self.clients.append(conn)
@@ -149,7 +143,7 @@ class Server:
                     exit()
                 except Exception as e:
                     # Исключение произойдет, если какой-то клиент отключится
-                    pass        # Ничего не делать, если какой-то клиент отключился
+                    pass  # Ничего не делать, если какой-то клиент отключился
 
                 self.requests = self.read_requests()  # Сохраним запросы клиентов
                 if self.requests:
@@ -159,6 +153,7 @@ class Server:
 
     @log
     def new_listen_socket(self):
+        """Установить соединение с клиентом"""
         sock = socket(AF_INET, SOCK_STREAM)
         sock.bind((self.arg.address, int(self.arg.port)))
         sock.listen(5)
@@ -173,24 +168,21 @@ class Server:
         return parser
 
     def read_requests(self):
-        """ Чтение запросов из списка клиентов
-        """
+        """ Чтение запросов из списка клиентов"""
         self.requests = {}  # Словарь запросов клиентов вида {сокет: запрос}
 
         for sock in self.r:
             try:
                 self.requests[sock] = pickle.loads(sock.recv(640))
-            except:
-                # print('Клиент {} {} отключился'.format(sock.fileno(), sock.getpeername()))
-                print('Клиент  отключился')
+            except Exception:
+                print('Клиент {} {} отключился'.format(
+                    sock.fileno(), sock.getpeername()))
                 self.clients.remove(sock)
         return self.requests
 
     @log
-    # def write_responses(self, requests, w_clients, all_clients):
     def write_responses(self):
-        """ Эхо-ответ сервера клиентам, от которых были запросы
-        """
+        """ Эхо-ответ сервера клиентам, от которых были запросы"""
 
         for sock in self.w:
             if sock in self.requests:
@@ -208,27 +200,28 @@ class Server:
 
                         check_client = session.query(Client.login).filter(
                             Client.login == presence_name).all()
+                        response = {
+                            "response": None,
+                            "time": time.time(),
+                            "alert": ''
+                        }
                         if not check_client:  # новый клиент - добавить в базу
                             new_cl = Client(
                                 presence_name, presence_pass)
                             session.add(new_cl)
                             session.commit()
+                            response["response"] = 202
+                            response["alert"] = "chat-server confirm connection"
                         else:  # клиент в базе - сверить пароль!
                             bd_pass = session.query(Client.password).filter(
                                 Client.login == presence_name).all()[0][0]
                             if bd_pass != hsh(presence_pass):
-                                response = {
-                                    "response": 402,
-                                    "time": time.time(),
-                                    "alert": "wrong login / password!"
-                                }
+                                response["response"] = 402
+                                response["alert"] = "wrong login / password!"
                             else:
-                                response = {
-                                    "response": 202,
-                                    "time": time.time(),
-                                    "alert": "chat-server rejected the connection"
-                                }
-                            sock.send(pickle.dumps(response))
+                                response["response"] = 202
+                                response["alert"] = "chat-server confirm connection"
+                        sock.send(pickle.dumps(response))
 
                         new_cl_id = session.query(Client.id).filter(
                             Client.login == presence_name).one()
@@ -242,18 +235,15 @@ class Server:
                         login = self.requests[sock]['user_login']
                         login_id = session.query(Client.id).filter(
                             Client.login == login).one()[0]
-                        # print(f'client_id = {login_id}')
                         contact_sample = session.query(ClientContact.interlocutor).filter(
                             ClientContact.client_id == login_id).all()
                         contact_sample.extend(session.query(ClientContact.client_id).filter(
                             ClientContact.interlocutor == login_id).all())
                         contact_ids = set(map(lambda x: x[0], contact_sample))
-                        # print(f'contact_ids = {contact_ids} {type(contact_ids)}')
                         contact_list = []
                         for cnt_id in contact_ids:
                             contact_list.append(session.query(Client.login).filter(
                                 Client.id == cnt_id).first()[0])
-                        # print(f'contact_list {contact_list}')
                         response = {
                             "response": 202,
                             "alert": contact_list
@@ -295,13 +285,10 @@ class Server:
                         session.add(new_interlocution)
                         session.commit()
 
-                    # except Exception as e:
-                    except KeyError as noname:
+                    except KeyError:
                         print("неудачная отправка сообщения отсутствующему абоненту")
 
             elif self.requests[sock]['action'] == 'quit':
-                # print(
-                #     f'deleting: {self.requests[sock]["action"]}\n{self.requests[sock]}')
                 print(
                     f'<{self.requests[sock]["from"]}> покинул беседу с <{self.requests[sock]["to"]}>')
                 # del interlocutors[requests[sock]]
@@ -321,6 +308,5 @@ class Server:
 
 
 if __name__ == '__main__':
-
     session = Session()
     srv = Server()
