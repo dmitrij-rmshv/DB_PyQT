@@ -3,4 +3,3 @@ __pycache__/
 server_app.log*
 server_storage.sqlite
 client*
-adm_ui.py
