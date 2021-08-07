@@ -1,5 +1,7 @@
 __pycache__/
 .idea/
-client_app.log
 server_app.log*
 server_storage.sqlite
+client*
+adm_ui.py
+*back
