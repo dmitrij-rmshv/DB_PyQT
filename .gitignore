@@ -4,3 +4,6 @@ server_app.log*
 server_storage.sqlite
 client*
 *back
+make.bat
+Makefile
+source/
