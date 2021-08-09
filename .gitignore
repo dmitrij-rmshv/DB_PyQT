@@ -7,3 +7,5 @@ client*
 make.bat
 Makefile
 source/
+gb_chat_server/src
+gb_chat_client/src

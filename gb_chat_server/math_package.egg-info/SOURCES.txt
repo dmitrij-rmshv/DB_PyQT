@@ -1,0 +1,10 @@
+README.md
+setup.cfg
+setup.py
+math_package.egg-info/PKG-INFO
+math_package.egg-info/SOURCES.txt
+math_package.egg-info/dependency_links.txt
+math_package.egg-info/top_level.txt
+src/adm_ui.py
+src/chat_server.py
+src/server_admin.py
