@@ -1,7 +1,8 @@
 import unittest
-from sys import argv
-from chat_server import create_parser
 from argparse import ArgumentParser
+from sys import argv
+
+from chat_server import create_parser
 
 
 class TestParserCreation(unittest.TestCase):

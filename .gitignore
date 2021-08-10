@@ -1,5 +1,11 @@
 __pycache__/
 .idea/
-client_app.log
 server_app.log*
 server_storage.sqlite
+client*
+*back
+make.bat
+Makefile
+source/
+gb_chat_server/src
+gb_chat_client/src

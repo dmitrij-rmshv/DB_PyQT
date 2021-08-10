@@ -1,0 +1,109 @@
+$ pip install cx_freeze
+Collecting cx_freeze
+  Downloading cx_Freeze-6.7.tar.gz (134 kB)
+     |████████████████████████████████| 134 kB 1.7 MB/s 
+Collecting importlib-metadata>=4.3.1
+  Downloading importlib_metadata-4.6.3-py3-none-any.whl (17 kB)
+Collecting zipp>=0.5
+  Downloading zipp-3.5.0-py3-none-any.whl (5.7 kB)
+Building wheels for collected packages: cx-freeze
+  Building wheel for cx-freeze (setup.py) ... error
+  ERROR: Command errored out with exit status 1:
+   command: /home/dima/PycharmProjects/venv_DB_PyQT/bin/python3 -u -c 'import sys, setuptools, tokenize; sys.argv[0] = '"'"'/tmp/pip-install-6t_128rz/cx-freeze/setup.py'"'"'; __file__='"'"'/tmp/pip-install-6t_128rz/cx-freeze/setup.py'"'"';f=getattr(tokenize, '"'"'open'"'"', open)(__file__);code=f.read().replace('"'"'\r\n'"'"', '"'"'\n'"'"');f.close();exec(compile(code, __file__, '"'"'exec'"'"'))' bdist_wheel -d /tmp/pip-wheel-48w1o0vm
+       cwd: /tmp/pip-install-6t_128rz/cx-freeze/
+  Complete output (41 lines):
+  running bdist_wheel
+  running build
+  running build_py
+  creating build
+  creating build/lib.linux-x86_64-3.8
+  creating build/lib.linux-x86_64-3.8/cx_Freeze
+  copying cx_Freeze/__init__.py -> build/lib.linux-x86_64-3.8/cx_Freeze
+  copying cx_Freeze/patchelf.py -> build/lib.linux-x86_64-3.8/cx_Freeze
+  copying cx_Freeze/setupwriter.py -> build/lib.linux-x86_64-3.8/cx_Freeze
+  copying cx_Freeze/module.py -> build/lib.linux-x86_64-3.8/cx_Freeze
+  copying cx_Freeze/windist.py -> build/lib.linux-x86_64-3.8/cx_Freeze
+  copying cx_Freeze/dist.py -> build/lib.linux-x86_64-3.8/cx_Freeze
+  copying cx_Freeze/winversioninfo.py -> build/lib.linux-x86_64-3.8/cx_Freeze
+  copying cx_Freeze/executable.py -> build/lib.linux-x86_64-3.8/cx_Freeze
+  copying cx_Freeze/darwintools.py -> build/lib.linux-x86_64-3.8/cx_Freeze
+  copying cx_Freeze/cli.py -> build/lib.linux-x86_64-3.8/cx_Freeze
+  copying cx_Freeze/exception.py -> build/lib.linux-x86_64-3.8/cx_Freeze
+  copying cx_Freeze/common.py -> build/lib.linux-x86_64-3.8/cx_Freeze
+  copying cx_Freeze/hooks.py -> build/lib.linux-x86_64-3.8/cx_Freeze
+  copying cx_Freeze/finder.py -> build/lib.linux-x86_64-3.8/cx_Freeze
+  copying cx_Freeze/freezer.py -> build/lib.linux-x86_64-3.8/cx_Freeze
+  copying cx_Freeze/winmsvcr.py -> build/lib.linux-x86_64-3.8/cx_Freeze
+  copying cx_Freeze/macdist.py -> build/lib.linux-x86_64-3.8/cx_Freeze
+  copying cx_Freeze/__main__.py -> build/lib.linux-x86_64-3.8/cx_Freeze
+  creating build/lib.linux-x86_64-3.8/cx_Freeze/initscripts
+  copying cx_Freeze/initscripts/SharedLibSource.py -> build/lib.linux-x86_64-3.8/cx_Freeze/initscripts
+  copying cx_Freeze/initscripts/__startup__.py -> build/lib.linux-x86_64-3.8/cx_Freeze/initscripts
+  copying cx_Freeze/initscripts/SharedLib.py -> build/lib.linux-x86_64-3.8/cx_Freeze/initscripts
+  copying cx_Freeze/initscripts/ConsoleSetLibPath.py -> build/lib.linux-x86_64-3.8/cx_Freeze/initscripts
+  copying cx_Freeze/initscripts/Console.py -> build/lib.linux-x86_64-3.8/cx_Freeze/initscripts
+  running build_ext
+  running install_include
+  creating build/temp.linux-x86_64-3.8
+  creating build/temp.linux-x86_64-3.8/source
+  creating build/temp.linux-x86_64-3.8/source/bases
+  x86_64-linux-gnu-gcc -pthread -Wno-unused-result -Wsign-compare -DNDEBUG -g -fwrapv -O2 -Wall -g -fstack-protector-strong -Wformat -Werror=format-security -g -fwrapv -O2 -g -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2 -fPIC -I/home/dima/PycharmProjects/venv_DB_PyQT/include -I/usr/include/python3.8 -c source/bases/Console.c -o build/temp.linux-x86_64-3.8/source/bases/Console.o
+  source/bases/Console.c:7:10: fatal error: Python.h: Нет такого файла или каталога
+      7 | #include <Python.h>
+        |          ^~~~~~~~~~
+  compilation terminated.
+  error: command 'x86_64-linux-gnu-gcc' failed with exit status 1
+  ----------------------------------------
+  ERROR: Failed building wheel for cx-freeze
+  Running setup.py clean for cx-freeze
+Failed to build cx-freeze
+Installing collected packages: zipp, importlib-metadata, cx-freeze
+    Running setup.py install for cx-freeze ... error
+    ERROR: Command errored out with exit status 1:
+     command: /home/dima/PycharmProjects/venv_DB_PyQT/bin/python3 -u -c 'import sys, setuptools, tokenize; sys.argv[0] = '"'"'/tmp/pip-install-6t_128rz/cx-freeze/setup.py'"'"'; __file__='"'"'/tmp/pip-install-6t_128rz/cx-freeze/setup.py'"'"';f=getattr(tokenize, '"'"'open'"'"', open)(__file__);code=f.read().replace('"'"'\r\n'"'"', '"'"'\n'"'"');f.close();exec(compile(code, __file__, '"'"'exec'"'"'))' install --record /tmp/pip-record-kkdwjpyr/install-record.txt --single-version-externally-managed --compile --install-headers /home/dima/PycharmProjects/venv_DB_PyQT/include/site/python3.8/cx-freeze
+         cwd: /tmp/pip-install-6t_128rz/cx-freeze/
+    Complete output (41 lines):
+    running install
+    running build
+    running build_py
+    creating build
+    creating build/lib.linux-x86_64-3.8
+    creating build/lib.linux-x86_64-3.8/cx_Freeze
+    copying cx_Freeze/__init__.py -> build/lib.linux-x86_64-3.8/cx_Freeze
+    copying cx_Freeze/patchelf.py -> build/lib.linux-x86_64-3.8/cx_Freeze
+    copying cx_Freeze/setupwriter.py -> build/lib.linux-x86_64-3.8/cx_Freeze
+    copying cx_Freeze/module.py -> build/lib.linux-x86_64-3.8/cx_Freeze
+    copying cx_Freeze/windist.py -> build/lib.linux-x86_64-3.8/cx_Freeze
+    copying cx_Freeze/dist.py -> build/lib.linux-x86_64-3.8/cx_Freeze
+    copying cx_Freeze/winversioninfo.py -> build/lib.linux-x86_64-3.8/cx_Freeze
+    copying cx_Freeze/executable.py -> build/lib.linux-x86_64-3.8/cx_Freeze
+    copying cx_Freeze/darwintools.py -> build/lib.linux-x86_64-3.8/cx_Freeze
+    copying cx_Freeze/cli.py -> build/lib.linux-x86_64-3.8/cx_Freeze
+    copying cx_Freeze/exception.py -> build/lib.linux-x86_64-3.8/cx_Freeze
+    copying cx_Freeze/common.py -> build/lib.linux-x86_64-3.8/cx_Freeze
+    copying cx_Freeze/hooks.py -> build/lib.linux-x86_64-3.8/cx_Freeze
+    copying cx_Freeze/finder.py -> build/lib.linux-x86_64-3.8/cx_Freeze
+    copying cx_Freeze/freezer.py -> build/lib.linux-x86_64-3.8/cx_Freeze
+    copying cx_Freeze/winmsvcr.py -> build/lib.linux-x86_64-3.8/cx_Freeze
+    copying cx_Freeze/macdist.py -> build/lib.linux-x86_64-3.8/cx_Freeze
+    copying cx_Freeze/__main__.py -> build/lib.linux-x86_64-3.8/cx_Freeze
+    creating build/lib.linux-x86_64-3.8/cx_Freeze/initscripts
+    copying cx_Freeze/initscripts/SharedLibSource.py -> build/lib.linux-x86_64-3.8/cx_Freeze/initscripts
+    copying cx_Freeze/initscripts/__startup__.py -> build/lib.linux-x86_64-3.8/cx_Freeze/initscripts
+    copying cx_Freeze/initscripts/SharedLib.py -> build/lib.linux-x86_64-3.8/cx_Freeze/initscripts
+    copying cx_Freeze/initscripts/ConsoleSetLibPath.py -> build/lib.linux-x86_64-3.8/cx_Freeze/initscripts
+    copying cx_Freeze/initscripts/Console.py -> build/lib.linux-x86_64-3.8/cx_Freeze/initscripts
+    running build_ext
+    running install_include
+    creating build/temp.linux-x86_64-3.8
+    creating build/temp.linux-x86_64-3.8/source
+    creating build/temp.linux-x86_64-3.8/source/bases
+    x86_64-linux-gnu-gcc -pthread -Wno-unused-result -Wsign-compare -DNDEBUG -g -fwrapv -O2 -Wall -g -fstack-protector-strong -Wformat -Werror=format-security -g -fwrapv -O2 -g -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2 -fPIC -I/home/dima/PycharmProjects/venv_DB_PyQT/include -I/usr/include/python3.8 -c source/bases/Console.c -o build/temp.linux-x86_64-3.8/source/bases/Console.o
+    source/bases/Console.c:7:10: fatal error: Python.h: Нет такого файла или каталога
+        7 | #include <Python.h>
+          |          ^~~~~~~~~~
+    compilation terminated.
+    error: command 'x86_64-linux-gnu-gcc' failed with exit status 1
+    ----------------------------------------
+ERROR: Command errored out with exit status 1: /home/dima/PycharmProjects/venv_DB_PyQT/bin/python3 -u -c 'import sys, setuptools, tokenize; sys.argv[0] = '"'"'/tmp/pip-install-6t_128rz/cx-freeze/setup.py'"'"'; __file__='"'"'/tmp/pip-install-6t_128rz/cx-freeze/setup.py'"'"';f=getattr(tokenize, '"'"'open'"'"', open)(__file__);code=f.read().replace('"'"'\r\n'"'"', '"'"'\n'"'"');f.close();exec(compile(code, __file__, '"'"'exec'"'"'))' install --record /tmp/pip-record-kkdwjpyr/install-record.txt --single-version-externally-managed --compile --install-headers /home/dima/PycharmProjects/venv_DB_PyQT/include/site/python3.8/cx-freeze Check the logs for full command output.
+
