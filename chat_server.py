@@ -4,9 +4,11 @@ import pickle
 from sys import argv
 from argparse import ArgumentParser
 import logging
-import log.server_log_config
 import select
+import dis
+import inspect
 
+import log.server_log_config
 
 logger = logging.getLogger('server_app')
 
@@ -19,47 +21,39 @@ def log(func):
     return deco
 
 
+def find_forbidden_methods_call(func, method_names):
+    for instr in dis.get_instructions(func):
+        if instr.opname == 'LOAD_METHOD' and instr.argval in method_names:
+            return instr.argval
+
+
 class ServerMeta(type):
-    def __init__(self, clsname, bases, clsdict):
-        # pass
-        for key, value in clsdict.items():
-            # Пропустить специальные и частные методы
-            if key.startswith("__"):
-                continue
 
-            # Пропустить любые невызываемые объекты
-            if not hasattr(value, "__call__"):
-                continue
+    forbidden_method_names = ('connect', )
 
-            # Проверить отсутствие вызовов connect для сокетов
-            if getattr(value, "connect"):
-                raise TypeError("class %s must not call connect" % clsname)
-
-            # Проверить использование сокетов для работы по TCP
-            if not getattr(value, "socket"):
-                raise TypeError("class %s must not call listen" % clsname)
-
-            # Проверить отсутствие создания сокетов на уровне классов
-            if getattr(value, "socket"):
-                raise TypeError("class %s must have not a socket" % clsname)
+    def __new__(cls, name, bases, class_dict):
+        for _, value in class_dict.items():
+            if inspect.isfunction(value):
+                method_name = find_forbidden_methods_call(
+                    value, cls.forbidden_method_names)
+                if method_name:
+                    raise ValueError(
+                        f'called forbidden method "{method_name}"')
+        return type.__new__(cls, name, bases, class_dict)
 
 
 class ServerVerifier(metaclass=ServerMeta):
     pass
 
 
-# class Server(ServerVerifier):
-class Server():
-    """docstring for Server"""
+class Server(ServerVerifier):
 
     def __init__(self):
-        # self.arg = arg
 
         self.interlocutors = {}
         self.groups = {}
 
         self.arg = self.create_parser().parse_args(argv[1:])
-        # self.s = self.new_listen_socket(self.arg)
         self.s = self.new_listen_socket()
         self.clients = []
 
@@ -119,7 +113,6 @@ class Server():
         return self.requests
 
     @log
-    # def write_responses(self, requests, w_clients, all_clients):
     def write_responses(self):
         """ Эхо-ответ сервера клиентам, от которых были запросы
         """
@@ -171,7 +164,6 @@ class Server():
             elif self.requests[sock]['action'] == 'quit':
                 print(
                     f'deleting: {self.requests[sock]["action"]}\n{self.requests[sock]}')
-                # del interlocutors[requests[sock]]
 
             elif self.requests[sock]['action'] == 'join':
                 if self.requests[sock]['room'] not in self.groups:
@@ -187,9 +179,5 @@ class Server():
 
 
 if __name__ == '__main__':
-
-    # interlocutors = {}
-    # groups = {}
-    # main()
 
     srv = Server()

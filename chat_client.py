@@ -43,29 +43,6 @@ class ClientMeta(type):
                     'Socket object cannot be defined in class definition')
         return type.__new__(cls, name, bases, class_dict)
 
-    # def __init__(self, clsname, bases, clsdict):
-    #     # pass
-    #     for key, value in clsdict.items():
-    #         # Пропустить специальные и частные методы
-    #         if key.startswith("__"):
-    #             continue
-
-    #         # Пропустить любые невызываемые объекты
-    #         if not hasattr(value, "__call__"):
-    #             continue
-
-    #         # Проверить отсутствие вызовов accept  для сокетов
-    #         if getattr(value, "accept"):
-    #             raise TypeError("class %s must not call accept" % clsname)
-
-    #         # Проверить отсутствие вызовов listen для сокетов
-    #         if getattr(value, "listen"):
-    #             raise TypeError("class %s must not call listen" % clsname)
-
-    #         # Проверить отсутствие создания сокетов на уровне классов
-    #         if getattr(value, "socket"):
-    #             raise TypeError("class %s must have not a socket" % clsname)
-
 
 class ClientVerifier(metaclass=ClientMeta):
     pass
