@@ -3,8 +3,11 @@ import pickle
 import time
 from sys import argv, exit
 import logging
-import log.client_log_config
+import dis
+import inspect
 from threading import Thread
+
+import log.client_log_config
 
 logger = logging.getLogger('client')
 
@@ -17,29 +20,51 @@ def log(func):
     return deco
 
 
+def find_forbidden_methods_call(func, method_names):
+    for instr in dis.get_instructions(func):
+        if instr.opname == 'LOAD_METHOD' and instr.argval in method_names:
+            return instr.argval
+
+
 class ClientMeta(type):
-    def __init__(self, clsname, bases, clsdict):
-        # pass
-        for key, value in clsdict.items():
-            # Пропустить специальные и частные методы
-            if key.startswith("__"):
-                continue
 
-            # Пропустить любые невызываемые объекты
-            if not hasattr(value, "__call__"):
-                continue
+    forbidden_method_names = ('accept', 'listen')
 
-            # Проверить отсутствие вызовов accept  для сокетов
-            if getattr(value, "accept"):
-                raise TypeError("class %s must not call accept" % clsname)
+    def __new__(cls, name, bases, class_dict):
+        for _, value in class_dict.items():
+            if inspect.isfunction(value):
+                method_name = find_forbidden_methods_call(
+                    value, cls.forbidden_method_names)
+                if method_name:
+                    raise ValueError(
+                        f'called forbidden method "{method_name}"')
+            elif isinstance(value, socket):
+                raise ValueError(
+                    'Socket object cannot be defined in class definition')
+        return type.__new__(cls, name, bases, class_dict)
 
-            # Проверить отсутствие вызовов listen для сокетов
-            if getattr(value, "listen"):
-                raise TypeError("class %s must not call listen" % clsname)
+    # def __init__(self, clsname, bases, clsdict):
+    #     # pass
+    #     for key, value in clsdict.items():
+    #         # Пропустить специальные и частные методы
+    #         if key.startswith("__"):
+    #             continue
 
-            # Проверить отсутствие создания сокетов на уровне классов
-            if getattr(value, "socket"):
-                raise TypeError("class %s must have not a socket" % clsname)
+    #         # Пропустить любые невызываемые объекты
+    #         if not hasattr(value, "__call__"):
+    #             continue
+
+    #         # Проверить отсутствие вызовов accept  для сокетов
+    #         if getattr(value, "accept"):
+    #             raise TypeError("class %s must not call accept" % clsname)
+
+    #         # Проверить отсутствие вызовов listen для сокетов
+    #         if getattr(value, "listen"):
+    #             raise TypeError("class %s must not call listen" % clsname)
+
+    #         # Проверить отсутствие создания сокетов на уровне классов
+    #         if getattr(value, "socket"):
+    #             raise TypeError("class %s must have not a socket" % clsname)
 
 
 class ClientVerifier(metaclass=ClientMeta):
@@ -68,14 +93,14 @@ class Client(ClientVerifier):
         except IndexError:
             logger.error("attempt to start without specifying the server")
             exit('Необходимо указать IP-адрес сервера')
-        # self.port = int(argv[2]) if len(argv) > 2 else 7777
-        try:
-            self.port = PortVerifier(int(argv[2]))
-        except IndexError:
-            self.port = PortVerifier(7777)
+        self.port = int(argv[2]) if len(argv) > 2 else 7777
+        # try:
+        #     self.port = PortVerifier(int(argv[2]))
+        # except IndexError:
+        #     self.port = PortVerifier(7777)
 
         self.account_name = input("Введите имя(ник): ") or "guest_user"
-        print("__dict__:", Client.__dict__)
+        # print("__dict__:", Client.__dict__)
 
     @log
     def send_msg(self, socket, msg_type):
@@ -176,7 +201,7 @@ if __name__ == '__main__':
     c = Client()
 
     c.s = socket(AF_INET, SOCK_STREAM)
-    print(c.s.__dict__)
+    # print(c.s.__dict__)
     c.s.connect((c.addr, c.port))
     c.presence_msg_send(c.s, c.account_name)
     c.server_msg = c.rcv_msg(c.s)

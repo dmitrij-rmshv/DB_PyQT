@@ -48,7 +48,8 @@ class ServerVerifier(metaclass=ServerMeta):
     pass
 
 
-class Server(ServerVerifier):
+# class Server(ServerVerifier):
+class Server():
     """docstring for Server"""
 
     def __init__(self):
