@@ -46,12 +46,32 @@ class ServerVerifier(metaclass=ServerMeta):
     pass
 
 
+class PortValidator:
+
+    def __init__(self, default=7777):
+        self.default = default
+        self._value = None
+
+    def __get__(self, instance, owner):
+        return self._value or self.default
+
+    def __set__(self, instance, value):
+        if not isinstance(value, int) or value <= 1:
+            raise ValueError("Порт должен быть положительным целым числом")
+        self._value = value
+
+
 class Server(ServerVerifier):
 
+    port = PortValidator()
+
     def __init__(self):
+        # self.port = port
 
         self.interlocutors = {}
         self.groups = {}
+
+        # self.port = PortValidator()
 
         self.arg = self.create_parser().parse_args(argv[1:])
         self.s = self.new_listen_socket()
@@ -86,15 +106,16 @@ class Server(ServerVerifier):
     @log
     def new_listen_socket(self):
         sock = socket(AF_INET, SOCK_STREAM)
-        sock.bind((self.arg.address, int(self.arg.port)))
+        # port = PortValidator(int(self.arg.port))
+        sock.bind((self.arg.address, (int(self.arg.port))))
         sock.listen(5)
         sock.settimeout(0.2)
         return sock
 
-    @log
+    @ log
     def create_parser(self):
         parser = ArgumentParser()
-        parser.add_argument('-p', '--port', default=7777)
+        parser.add_argument('-p', '--port', default=self.port)
         parser.add_argument('-a', '--address', default='')
         return parser
 
@@ -112,7 +133,7 @@ class Server(ServerVerifier):
                 self.clients.remove(sock)
         return self.requests
 
-    @log
+    @ log
     def write_responses(self):
         """ Эхо-ответ сервера клиентам, от которых были запросы
         """

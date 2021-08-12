@@ -48,20 +48,6 @@ class ClientVerifier(metaclass=ClientMeta):
     pass
 
 
-class PortVerifier:
-
-    def __init__(self):
-        self._value = 0
-
-    def __get__(self, instance, instance_type):
-        return self._value
-
-    def __set(self, instance, value):
-        if value < 0:
-            raise ValueError("Оценка должна быть от 1 до 5")
-        self._value = value
-
-
 class Client(ClientVerifier):
 
     def __init__(self):
@@ -71,13 +57,8 @@ class Client(ClientVerifier):
             logger.error("attempt to start without specifying the server")
             exit('Необходимо указать IP-адрес сервера')
         self.port = int(argv[2]) if len(argv) > 2 else 7777
-        # try:
-        #     self.port = PortVerifier(int(argv[2]))
-        # except IndexError:
-        #     self.port = PortVerifier(7777)
 
         self.account_name = input("Введите имя(ник): ") or "guest_user"
-        # print("__dict__:", Client.__dict__)
 
     @log
     def send_msg(self, socket, msg_type):
